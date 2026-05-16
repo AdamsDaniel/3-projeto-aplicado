@@ -25,6 +25,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`foodtruck.docker.localhost`)"
       - "traefik.http.routers.backend.entrypoints=web"
+    ports:
+      - "8000:8000"
     env_file:
       - .env
     networks:
@@ -34,6 +36,18 @@ services:
         condition: service_healthy
     volumes:
       - ./migrations:/app/migrations
+
+  frontend:
+    container_name: frontend
+    image: nginx:alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ../projeto_aplicado_foodtruck_frontend-main:/usr/share/nginx/html:ro
+    networks:
+      - default_network
+    depends_on:
+      - backend
 
   postgres:
     container_name: postgres
