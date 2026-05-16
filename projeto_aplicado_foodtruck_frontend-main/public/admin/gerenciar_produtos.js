@@ -100,13 +100,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         form.reset();
     }
 
-    /**
-     * Função genérica para fazer requisições à API.
-     * Lida com autenticação e tratamento de erros comuns.
-     * @param {string} url - A URL do endpoint da API.
-     * @param {object} options - Opções para a requisição fetch.
-     * @returns {Promise<object|null>} Os dados da resposta JSON ou null em caso de erro.
-     */
     async function fetchData(url, options) {
         try {
             const response = await fetch(url, {
@@ -119,10 +112,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (response.status === 401 || response.status === 403) {
-                displayMessage(ELEMENTS.productDetailMessage, MESSAGES.sessionExpired, 'error'); // Usar um elemento mais genérico para esta mensagem
+                displayMessage(ELEMENTS.productDetailMessage, MESSAGES.sessionExpired, 'error');
                 localStorage.removeItem('accessToken');
                 window.location.href = '../index.html';
-                return null; // Indica que o erro de autenticação foi tratado
+                return null;
             }
 
             const data = await response.json();
@@ -130,13 +123,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!response.ok) {
                 const errorMessage = data.detail || data.message || response.statusText;
                 console.error(`Erro na requisição para ${url}:`, errorMessage, data);
-                throw new Error(errorMessage); // Lança um erro para ser pego pelo catch externo
+                // Return an object with error property instead of throwing to avoid generic catch
+                return { error: true, status: response.status, message: errorMessage, data: data };
             }
             return data;
         } catch (error) {
             console.error('Erro na requisição:', error);
-            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.serverConnectionError, 'error');
-            return null;
+            // Instead of modifying the DOM here, return the error
+            return { error: true, status: 0, message: MESSAGES.serverConnectionError };
         }
     }
 
@@ -164,7 +158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             method: 'GET',
         });
 
-        if (data) {
+        if (data && !data.error) {
             ELEMENTS.productsList.innerHTML = '';
             const items = data.products;
 
@@ -191,6 +185,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const pagination = data.pagination;
                 ELEMENTS.productsPaginationInfo.innerText = `Página: ${pagination.page} de ${pagination.total_pages} (Total: ${pagination.total_count} produtos)`;
             }
+        } else if (data && data.error) {
+            ELEMENTS.productsList.innerHTML = `<li>${data.message || MESSAGES.errorFetchingProducts}</li>`;
         } else {
             ELEMENTS.productsList.innerHTML = `<li>${MESSAGES.errorFetchingProducts}</li>`;
         }
@@ -224,7 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             body: JSON.stringify(newProduct)
         });
 
-        if (data) {
+        if (data && !data.error) {
             if (data.id) {
                 displayMessage(ELEMENTS.createProductMessage, MESSAGES.productCreatedSuccess(newProduct.name, data.id), 'success');
             } else {
@@ -232,6 +228,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             clearForm(ELEMENTS.createProductForm);
             fetchProducts(); // Recarrega a lista
+        } else if (data && data.error) {
+            displayMessage(ELEMENTS.createProductMessage, data.message || MESSAGES.errorCreatingProduct, 'error');
         } else {
             displayMessage(ELEMENTS.createProductMessage, MESSAGES.errorCreatingProduct, 'error');
         }
@@ -252,7 +250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             method: 'GET',
         });
 
-        if (data) {
+        if (data && !data.error) {
             currentEditProductId = productId;
             ELEMENTS.currentProductIdSpan.innerText = productId;
 
@@ -263,15 +261,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             ELEMENTS.updateProductForm.style.display = 'block';
             displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productLoadedForEdit(data.name), 'success');
+        } else if (data && data.error) {
+            displayMessage(ELEMENTS.productDetailMessage, data.message || MESSAGES.productNotFound(productId), 'warning');
         } else {
-            // fetchData já trata erros de conexão e autenticação
-            // Aqui podemos adicionar tratamento para 404 especificamente se fetchData não o fizer
-            // Por simplicidade, fetchData lança erro, então o 'null' já cobre
-            if (productId && ELEMENTS.productDetailMessage.innerText === MESSAGES.serverConnectionError) {
-                // Se o erro foi de conexão, a mensagem já está lá
-            } else {
-                displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productNotFound(productId), 'warning');
-            }
+            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productNotFound(productId), 'warning');
         }
     }
 
@@ -305,9 +298,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             body: JSON.stringify(patchData)
         });
 
-        if (data) {
-            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productUpdatedSuccess(patchData.name), 'success');
+        if (data && !data.error) {
+            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productUpdatedSuccess(patchData.name || ELEMENTS.updateName.value), 'success');
             fetchProducts();
+        } else if (data && data.error) {
+            displayMessage(ELEMENTS.productDetailMessage, data.message || MESSAGES.errorUpdatingProduct, 'error');
         } else {
             displayMessage(ELEMENTS.productDetailMessage, MESSAGES.errorUpdatingProduct, 'error');
         }
@@ -329,17 +324,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             method: 'DELETE',
         });
 
-        // Para DELETE, data pode ser vazia se a resposta for 204 No Content
-        // A função fetchData já verifica response.ok, então se não for null, a operação foi bem-sucedida.
-        if (data !== null) { // Se a requisição não retornou erro (mesmo que a resposta seja vazia)
+        if (data && !data.error) {
             displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productDeletedSuccess(ELEMENTS.updateName.value), 'success');
             ELEMENTS.updateProductForm.style.display = 'none';
             currentEditProductId = null;
             ELEMENTS.getProductIdInput.value = '';
             fetchProducts();
+        } else if (data && data.error) {
+            displayMessage(ELEMENTS.productDetailMessage, data.message || MESSAGES.errorDeletingProduct, 'error');
         } else {
-            // A mensagem de erro já foi definida por fetchData se houver um erro de rede/auth
-            // Caso contrário, significa que a API retornou um erro específico no data.detail/message
             displayMessage(ELEMENTS.productDetailMessage, MESSAGES.errorDeletingProduct, 'error');
         }
     }
