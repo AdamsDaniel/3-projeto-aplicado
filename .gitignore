@@ -1,0 +1,19 @@
+
+# Segredos e dados locais
+token.json
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Worktrees e metadados locais do Claude/ECC
+.claude/worktrees/
+.claude/settings.local.json
+.ecc/
+
+# Dados locais ou exportações que possam conter evidências brutas
+dados/*.xlsx
+dados/*.csv
