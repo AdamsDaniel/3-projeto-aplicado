@@ -49,7 +49,7 @@
 | VULN-004 | Token JWT de administrador versionado no git (`token.json`) | Repositório (raiz) | VC | Média | Alta | A07 | CWE-540 |
 | VULN-005 | Endpoint de login sem limite de tentativas | Backend `/token` | VC | Média | Alta | A07 | CWE-307 |
 | VULN-006 | Política de senha fraca (mínimo de 6 caracteres) | Backend `/users` | VC | Média | Alta | A07 | CWE-521 |
-| VULN-007 | Atualização de pedido sem regra de transição, sem controle por campo e sem limites para a nota | Backend `PATCH /orders/{id}` | VC | Média | Alta (nota: Média) | A01 / A04 | CWE-840 / CWE-863 / CWE-20 |
+| VULN-007 | Atualização de pedido sem autorização por campo, sem regra de transição e sem limites para a nota | Backend `PATCH /orders/{id}` | VC | Média | Alta (nota: Média) | A01 / A04 | CWE-840 / CWE-863 / CWE-20 |
 | VULN-008 | Paginação sem limites e divisão por zero | Backend `/products`, `/orders/{id}/items`, `/users`, `/orders` | VC | Média | Alta | A04 | CWE-369 / CWE-770 |
 | VULN-009 | Token de acesso em `localStorage` e resposta de login registrada no console | Frontend | VC | Média | Alta | A02 / A09 | CWE-922 / CWE-532 |
 | VULN-010 | Exceções de banco não tratadas geram HTTP 500 | Backend `/users`, `/orders` | VC | Baixa | Alta | A04 | CWE-755 |
@@ -163,7 +163,7 @@
 - **OWASP:** A07:2021 · **CWE:** CWE-521 · **CVE:** não aplicável
 - **Recomendação inicial:** mínimo de 12 caracteres, lista de senhas comuns ou vazadas (NIST SP 800-63B) e mensagem de erro coerente com a regra.
 
-### VULN-007 — Atualização de pedido sem regra de transição, sem controle por campo e sem limites para a nota
+### VULN-007 — Atualização de pedido sem autorização por campo, sem regra de transição e sem limites para a nota
 
 - **Componente afetado:** backend `PATCH /api/v1/orders/{order_id}` (`order/controller.py`, `order/schemas.py`, `shared/repository.py`)
 - **Classificação:** VC (transição e controle por campo) · VM (persistência de nota fora da faixa) · **Confiança:** Alta / Média
@@ -256,7 +256,7 @@
   - O Redis sobe sem `requirepass`/ACL e o cliente Python conecta sem senha. O módulo de cache **não é importado por nenhum código**, então o Redis é superfície de ataque sem uso funcional.
   - O backend publica `8000:8000`, o que permite contornar o Traefik e qualquer controle futuro aplicado nele (rate limit, TLS, cabeçalhos).
   - O healthcheck do Postgres assume o usuário `postgres`. No `.env` local (não versionado), a verificação booleana indicou usuário de banco padrão e senha curta (menos de 12 caracteres). Valores não registrados.
-- **Evidência:** `docker-compose.yaml:28-29`, `:57-58`, `:62`, `:71-74`; `ext/cache/redis.py:10-14` (`Redis(host=…, port=…, decode_responses=True)`, sem senha); `grep -rn "ext.cache" projeto_aplicado/` → nenhuma ocorrência
+- **Evidência:** `docker-compose.yaml:28-29`, `:57-58`, `:62`, `:71-74`; `ext/cache/redis.py:10-14` (`Redis(host=…, port=…, decode_responses=True)`, sem senha); `grep -rn "ext.cache" projeto_aplicado/` → nenhuma ocorrência; verificação local do `.env` frente ao `.env.template`: comparação booleana linha a linha (sem imprimir conteúdo) confirmando presença de usuário e senha padrão de banco de dados no arquivo de configuração de desenvolvimento — valores não reproduzidos neste documento
 - **Pré-requisito de exploração:** acesso de rede ao host nas portas 5432, 6379 ou 8000.
 - **Impacto técnico:** acesso não autenticado ao Redis (leitura e escrita, `CONFIG`, execução de Lua, ver CVEs em VULN-015). Força bruta direta contra o PostgreSQL. Uso da API sem passar pelo proxy.
 - **OWASP:** A05:2021 · **CWE:** CWE-668, CWE-306 · **CVE:** ver VULN-015
@@ -357,7 +357,7 @@
   - Os tokens trazem apenas `sub` e `exp`, sem `iss`, `aud`, `iat` ou `jti`.
   - Não há logout no servidor, lista de revogação nem invalidação após troca de senha ou de perfil. O usuário é recarregado a cada requisição, então exclusão de conta e mudança de perfil têm efeito imediato, mas **troca de senha não invalida tokens emitidos**.
   - `JWT_ALGORITHM` vem do ambiente sem lista de valores permitidos.
-  - No `.env` local, o algoritmo é `HS256`, a expiração é de 30 min e o segredo tem 35 caracteres. A entropia real é desconhecida, e isso é crítico por causa de VULN-004.
+  - No `.env` local, foi feita apenas uma verificação estrutural do algoritmo (`HS256`) e do tempo de expiração configurado (30 min). O valor e o comprimento de `JWT_SECRET_KEY` não foram registrados nem reproduzidos, para não reduzir o espaço de busca de um eventual ataque de força bruta offline (ver VULN-004); a entropia real do segredo consta como item de validação manual abaixo.
 - **Evidência:** `auth/security.py:31-38` (claims), `:52-54` (`algorithms=[settings.JWT_ALGORITHM]`); `settings.py:39-41`
 - **O que validar:** (1) entropia de `JWT_SECRET_KEY` em cada ambiente, sem expor o valor (ex.: confirmar que foi gerado por CSPRNG com 32 bytes ou mais); (2) se um token emitido antes de uma troca de senha continua aceito; (3) se algum ambiente define `JWT_ALGORITHM` com valor diferente de `HS256`/`RS256`.
 - **Pré-requisito de exploração:** posse de um token previamente emitido.

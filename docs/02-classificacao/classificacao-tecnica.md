@@ -34,11 +34,16 @@
 
 ### 1.4 Ajustes em relação ao inventário preliminar
 
+As mudanças de severidade registradas abaixo (VULN-001, VULN-002, VULN-003, VULN-005, VULN-006, VULN-010) decorrem do cálculo do vetor CVSS v3.1 (métricas base) feito nesta etapa. O inventário preliminar continha apenas uma priorização qualitativa ("Sev. preliminar"), sem vetor formal calculado; por isso a severidade final pode subir ou descer em relação à estimativa preliminar sem que isso indique erro no inventário.
+
 | ID | Inventário (preliminar) | Classificação técnica | Motivo |
 |---|---|---|---|
-| VULN-002 | CWE-602 (principal) | CWE-472 (principal), CWE-602 (secundária) | O preço é um parâmetro que se supõe imutável, mas é controlado externamente. CWE-472 descreve isso de forma mais específica |
+| VULN-001 | Severidade "Alta" | 5,4 **Média** | Severidade decorre do vetor CVSS v3.1 (base) calculado nesta etapa; o inventário preliminar usava priorização qualitativa, não um vetor formal |
+| VULN-002 | Severidade "Alta"; CWE-602 (principal) | 6,5 **Média**; CWE-472 (principal), CWE-602 (secundária) | Severidade: vetor CVSS v3.1 substitui a priorização qualitativa preliminar. CWE: o preço é um parâmetro que se supõe imutável, mas é controlado externamente; CWE-472 descreve isso de forma mais específica |
 | VULN-003 | Severidade "Alta" | 9,8 **Crítica** | Resultado do vetor CVSS: sem autenticação, com impacto total |
-| VULN-004 | A07:2021 | **A05:2021 (por afinidade)** | Exposição de token e informação sensível no repositório configura falha de segurança; a CWE-540 permanece como taxonomia técnica principal |
+| VULN-004 | A07:2021; CWE secundária "relacionado: CWE-312" | A05:2021 (por afinidade); CWE secundária: CWE-359 | OWASP: exposição de token e informação sensível no repositório configura falha de segurança; a CWE-540 permanece como taxonomia técnica principal. CWE secundária: a evidência confirmada sustenta exposição de identificadores e e-mail da conta administrativa no repositório (CWE-359); não há evidência suficiente para afirmar armazenamento em texto claro como fraqueza separada (CWE-312) |
+| VULN-005 | Severidade "Média" | 7,4 **Alta** | Severidade decorre do vetor CVSS v3.1 (base) calculado nesta etapa; o inventário preliminar usava priorização qualitativa, não um vetor formal |
+| VULN-006 | Severidade "Média" | 7,4 **Alta** | Severidade decorre do vetor CVSS v3.1 (base) calculado nesta etapa; o inventário preliminar usava priorização qualitativa, não um vetor formal |
 | VULN-007 | CWE-840 / CWE-863 / CWE-20 | CWE-863 (principal), CWE-841 (secundária) | CWE-840 é categoria, não fraqueza. CWE-841 cobre a falta de fluxo de estados. CWE-20 (nota) segue pendente de validação |
 | VULN-009 | A02 / A09; CWE-532 | **A01:2021**; CWE-215 (secundária) | CWE-922 consta na lista oficial de A01:2021. O dado sensível vai para código de depuração (console do navegador), não para arquivo de log |
 | VULN-010 | Severidade "Baixa" | 0,0 **Nenhuma** | Nenhum impacto em confidencialidade, integridade ou disponibilidade é demonstrável estaticamente. É uma fraqueza de robustez |
@@ -56,7 +61,7 @@
 | VULN-001 | XSS armazenado | CWE-79 / — | A03 | `AV:N/AC:L/PR:L/UI:R/S:C/C:L/I:L/A:N` | 5,4 | Média | Não aplicável | T1059.007, T1528 |
 | VULN-009 | Token em `localStorage` e no console | CWE-922 / CWE-215 | A01 | `AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:N` | 4,4 | Média | Não aplicável | T1528, T1550.001 |
 | VULN-004 | Token JWT versionado no git | CWE-540 / CWE-359 | A05 (afinidade) | `AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N` | 4,3 | Média | Não aplicável | T1552.001 |
-| VULN-007 | Atualização de pedido sem autorização por campo nem fluxo | CWE-863 / CWE-841 | A01 | `AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N` | 4,3 | Média | Não aplicável | T1565.001 |
+| VULN-007 | Atualização de pedido sem autorização por campo, sem regra de transição e sem limites para a nota | CWE-863 / CWE-841 | A01 | `AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:L/A:N` | 4,3 | Média | Não aplicável | T1565.001 |
 | VULN-008 | Paginação sem limites e divisão por zero | CWE-770 / CWE-369 | A04 (afinidade) | `AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:L` | 4,3 | Média | Não aplicável | T1499.003 |
 | VULN-010 | Exceções de banco não tratadas | CWE-755 / CWE-20 | A04 (afinidade) | `AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:N` | 0,0 | Nenhuma | Não aplicável | Não aplicável |
 
